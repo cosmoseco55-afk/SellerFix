@@ -12,6 +12,7 @@ import {
   Warehouse,
   Settings,
   Store,
+  Upload,
 } from "lucide-react"
 
 const nav = [
@@ -34,6 +35,7 @@ const nav = [
   {
     title: "Управление",
     items: [
+      { href: "/dashboard/import", label: "Загрузка отчётов", icon: Upload },
       { href: "/dashboard/stores", label: "Магазины", icon: Store },
       { href: "/dashboard/settings", label: "Настройки", icon: Settings },
     ],
