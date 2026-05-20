@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SallerFix</title>
+    <link rel="icon" href="./assets/sallerfix-logo.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Основная навигация">
+        <div class="module-rail">
+          <div class="brand-mark"><img src="./assets/sallerfix-logo.png" alt="" /></div>
+          <nav class="rail-list" aria-label="Модули">
+            <a class="rail-item active" href="#dashboard" aria-label="Дашборд" aria-current="page">▦</a>
+            <a class="rail-item" href="#products" aria-label="Товары">◫</a>
+            <a class="rail-item" href="#pnl" aria-label="Финансы">₽</a>
+            <a class="rail-item" href="#cashflow" aria-label="Отчеты">◷</a>
+            <a class="rail-item" href="#stock" aria-label="Контроль">!</a>
+          </nav>
+          <a class="rail-item rail-button" href="#settings" title="Настройки" aria-label="Настройки">⚙</a>
+        </div>
+
+        <div class="section-column">
+          <div class="brand">
+            <div>
+              <strong>SallerFix</strong>
+              <span>Marketplace profit control</span>
+            </div>
+          </div>
+
+          <nav class="nav-list" aria-label="Разделы">
+            <div class="nav-group">
+              <span class="nav-title">Финансы</span>
+              <a class="nav-item active" href="#dashboard" aria-current="page">
+                <span>Дашборд</span>
+                <i>live</i>
+              </a>
+              <a class="nav-item" href="#pnl">
+                <span>ОПиУ</span>
+                <i>май</i>
+              </a>
+              <a class="nav-item" href="#expenses">
+                <span>Расходы</span>
+                <i>5</i>
+              </a>
+              <a class="nav-item" href="#cashflow">
+                <span>ДДС</span>
+                <i>new</i>
+              </a>
+              <a class="nav-item" href="#operations">
+                <span>Операции</span>
+                <i id="operationsCount">0</i>
+              </a>
+              <a class="nav-item" href="#reports">
+                <span>Отчеты</span>
+                <i id="reportsDaysCount">0 дн</i>
+              </a>
+            </div>
+
+            <div class="nav-group">
+              <span class="nav-title">Маркетплейсы</span>
+              <a class="nav-item" href="#wb">
+                <span>Wildberries</span>
+                <i>3 SKU</i>
+              </a>
+              <a class="nav-item" href="#ozon">
+                <span>Ozon</span>
+                <i>2 SKU</i>
+              </a>
+              <a class="nav-item" href="#ads">
+                <span>Реклама</span>
+                <i>ДРР</i>
+              </a>
+            </div>
+
+            <div class="nav-group">
+              <span class="nav-title">Срезы</span>
+              <a class="nav-item" href="#products">
+                <span>Прибыльность SKU</span>
+                <i>маржа</i>
+              </a>
+              <a class="nav-item" href="#stock">
+                <span>Остатки</span>
+                <i class="warn-pill">9 дн.</i>
+              </a>
+            </div>
+          </nav>
+
+          <div class="sync-card">
+            <span>Синхронизация</span>
+            <strong>WB · Ozon · 1C</strong>
+            <div class="sync-meter"><i></i></div>
+            <small>Обновлено 7 минут назад</small>
+          </div>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Операционная аналитика селлера</p>
+            <h1>Финансы маркетплейсов без ручных таблиц</h1>
+          </div>
+          <div class="topbar-actions">
+            <button class="icon-button" type="button" title="Уведомления" aria-label="Уведомления">◉</button>
+            <button class="primary-button" id="exportPnlTop" type="button">Экспорт P&L</button>
+          </div>
+        </header>
+
+        <div class="page active" data-page="dashboard">
+        <section class="filters" aria-label="Фильтры">
+          <label>
+            Период
+            <select id="periodFilter">
+              <option value="30">30 дней</option>
+              <option value="14">14 дней</option>
+              <option value="7">7 дней</option>
+            </select>
+          </label>
+          <label>
+            Площадка
+            <select id="marketFilter">
+              <option value="all">Все</option>
+              <option value="WB">Wildberries</option>
+              <option value="Ozon">Ozon</option>
+            </select>
+          </label>
+          <label>
+            Группа
+            <select id="groupFilter">
+              <option value="all">Все группы</option>
+              <option value="home">Дом</option>
+              <option value="beauty">Красота</option>
+              <option value="kids">Дети</option>
+            </select>
+          </label>
+          <button class="ghost-button" id="refreshButton" type="button">Обновить</button>
+          <button class="ghost-button" id="resetFiltersButton" type="button">Сбросить фильтры</button>
+        </section>
+
+        <section class="kpi-grid" aria-label="Ключевые показатели">
+          <article class="metric-card">
+            <span>Выручка</span>
+            <strong id="revenueMetric">0 ₽</strong>
+            <small class="good">+12.4% к прошлому периоду</small>
+          </article>
+          <article class="metric-card">
+            <span>Чистая прибыль</span>
+            <strong id="profitMetric">0 ₽</strong>
+            <small class="good">Маржа держится выше плана</small>
+          </article>
+          <article class="metric-card">
+            <span>Комиссии и логистика</span>
+            <strong id="costMetric">0 ₽</strong>
+            <small class="warn">2 SKU требуют проверки</small>
+          </article>
+          <article class="metric-card">
+            <span>ROI рекламы</span>
+            <strong id="roiMetric">0%</strong>
+            <small class="good">Реклама окупается</small>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel chart-panel" id="dashboard">
+            <div class="panel-head">
+              <div>
+                <h2>Прибыль и выручка</h2>
+                <p>Динамика по выбранному периоду</p>
+              </div>
+              <div class="legend">
+                <span><i class="revenue-dot"></i>Выручка</span>
+                <span><i class="profit-dot"></i>Прибыль</span>
+              </div>
+            </div>
+            <div class="chart" id="profitChart" aria-label="График прибыли и выручки"></div>
+          </article>
+
+          <article class="panel health-panel">
+            <div class="panel-head">
+              <div>
+                <h2>Контроль бизнеса</h2>
+                <p>Сигналы, которые стоит разобрать сегодня</p>
+              </div>
+            </div>
+            <div class="alert-list" id="alertList"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Где теряем деньги</h2>
+                <p>Топ-5 утечек прибыли и действий</p>
+              </div>
+            </div>
+            <div class="alert-list" id="profitLeakList"></div>
+          </article>
+        </section>
+
+        <section class="content-grid lower-grid">
+          <article class="panel" id="products">
+            <div class="panel-head">
+              <div>
+                <h2>SKU по прибыльности</h2>
+                <p>Рейтинг товаров с учетом комиссий, логистики и рекламы</p>
+              </div>
+              <button class="ghost-button compact" id="exportSkuCompact" type="button">CSV</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Товар</th>
+                    <th>Площадка</th>
+                    <th>Продажи</th>
+                    <th>Маржа</th>
+                    <th>Статус</th>
+                  </tr>
+                </thead>
+                <tbody id="productTable"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel" id="expenses">
+            <div class="panel-head">
+              <div>
+                <h2>Структура расходов</h2>
+                <p>Где проседает юнит-экономика</p>
+              </div>
+            </div>
+            <div class="expense-stack" id="expenseStack"></div>
+          </article>
+        </section>
+        </div>
+
+        <div class="page" data-page="pnl">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">Финансовый отчет</p>
+              <h2>ОПиУ по маркетплейсам</h2>
+            </div>
+            <button class="primary-button" id="exportPnlPage" type="button">Скачать Excel</button>
+          </section>
+
+          <section class="report-grid">
+            <article class="metric-card">
+              <span>Валовая прибыль</span>
+              <strong id="grossProfitMetric">0 ₽</strong>
+              <small class="good" id="grossProfitNote">0% от выручки</small>
+            </article>
+            <article class="metric-card">
+              <span>Операционные расходы</span>
+              <strong id="operatingExpenseMetric">0 ₽</strong>
+              <small class="warn" id="operatingExpenseNote">Из журнала операций</small>
+            </article>
+            <article class="metric-card">
+              <span>EBITDA</span>
+              <strong id="ebitdaMetric">0 ₽</strong>
+              <small class="good" id="ebitdaNote">0% маржа</small>
+            </article>
+          </section>
+
+          <section class="filters compact-filters" aria-label="Фильтры операций">
+            <label>
+              Площадка
+              <select id="operationMarketFilter">
+                <option value="all">Все</option>
+                <option value="WB">Wildberries</option>
+                <option value="Ozon">Ozon</option>
+              </select>
+            </label>
+            <label>
+              Тип
+              <select id="operationTypeFilter">
+                <option value="all">Все</option>
+                <option value="income">Приход</option>
+                <option value="expense">Расход</option>
+              </select>
+            </label>
+            <label>
+              Поиск SKU
+              <input id="operationSearch" type="search" placeholder="Название товара" />
+            </label>
+          </section>
+
+          <section class="filters compact-filters" aria-label="Быстрые фильтры статей">
+            <div class="quick-filters" id="operationCategoryFilters">
+              <button class="ghost-button compact active" data-operation-category="all" type="button">Все</button>
+              <button class="ghost-button compact" data-operation-category="sale" type="button">Продажа</button>
+              <button class="ghost-button compact" data-operation-category="commission" type="button">Комиссия</button>
+              <button class="ghost-button compact" data-operation-category="logistics" type="button">Логистика</button>
+              <button class="ghost-button compact" data-operation-category="ads" type="button">Реклама</button>
+              <button class="ghost-button compact" data-operation-category="other" type="button">Прочее</button>
+            </div>
+          </section>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Расшифровка ОПиУ</h2>
+                <p>Выручка, себестоимость, комиссии и чистый результат</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="report-table">
+                <tbody id="pnlTable"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+
+        <div class="page" data-page="expenses">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">Расходы</p>
+              <h2>Все затраты по статьям и площадкам</h2>
+            </div>
+            <div class="topbar-actions">
+              <button class="ghost-button" id="exportExpenses" type="button">CSV</button>
+              <button class="ghost-button danger-button" id="resetExpenses" type="button">Сброс</button>
+              <button class="ghost-button" data-modal-open="expenseModal" type="button">Добавить расход</button>
+            </div>
+          </section>
+          <section class="content-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Структура расходов</h2>
+                  <p>Доля каждой статьи в общих расходах</p>
+                </div>
+              </div>
+              <div class="expense-stack" id="expenseDetailStack"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Контроль отклонений</h2>
+                  <p>Статьи, которые вышли за план</p>
+                </div>
+              </div>
+              <div class="alert-list">
+                <div class="alert-item">
+                  <span class="alert-badge">%</span>
+                  <div>
+                    <strong>Реклама выше плана</strong>
+                    <span>Расходы на продвижение занимают 16% всех затрат против плана 12%.</span>
+                  </div>
+                </div>
+                <div class="alert-item">
+                  <span class="alert-badge">₽</span>
+                  <div>
+                    <strong>Логистика WB</strong>
+                    <span>По набору полотенец тариф вырос после смены габаритов упаковки.</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
+        </div>
+
+        <div class="page" data-page="cashflow">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">Движение денежных средств</p>
+              <h2>ДДС и кассовые разрывы</h2>
+            </div>
+            <button class="ghost-button" data-modal-open="paymentModal" type="button">Платежный календарь</button>
+          </section>
+          <section class="content-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Ближайшие выплаты</h2>
+                  <p>Ожидаемые поступления WB и Ozon</p>
+                </div>
+              </div>
+              <div class="timeline" id="cashflowTimeline"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Кассовая позиция</h2>
+                  <p>План на 14 дней</p>
+                </div>
+              </div>
+              <div class="cash-card">
+                <span>Доступно после обязательных платежей</span>
+                <strong id="cashAvailableMetric">0 ₽</strong>
+                <small class="good" id="cashStatusNote">Разрыва не ожидается</small>
+              </div>
+            </article>
+          </section>
+        </div>
+
+        <div class="page" data-page="operations">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">Журнал операций</p>
+              <h2>Деньги, начисления и списания маркетплейсов</h2>
+            </div>
+            <div class="topbar-actions">
+              <button class="ghost-button" data-modal-open="operationAddModal" type="button">Добавить</button>
+              <button class="ghost-button" data-modal-open="operationImportModal" type="button">Импорт</button>
+              <button class="primary-button" id="resetOperations" type="button">Сброс</button>
+            </div>
+          </section>
+
+          <section class="report-grid">
+            <article class="metric-card">
+              <span>Приход</span>
+              <strong id="operationIncome">0 ₽</strong>
+              <small class="good">Начисления и выплаты</small>
+            </article>
+            <article class="metric-card">
+              <span>Списания</span>
+              <strong id="operationExpense">0 ₽</strong>
+              <small class="warn">Комиссии, логистика, реклама</small>
+            </article>
+            <article class="metric-card">
+              <span>Баланс операций</span>
+              <strong id="operationBalance">0 ₽</strong>
+              <small id="operationBalanceTone">После всех списаний</small>
+            </article>
+          </section>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Лента операций</h2>
+                <p>Источник для будущих расчетов ОПиУ и ДДС</p>
+              </div>
+              <div class="topbar-actions">
+                <button class="ghost-button compact danger-button" id="deleteSelectedOperations" type="button">Удалить выбранные</button>
+                <button class="ghost-button compact" id="exportOperations" type="button">CSV</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th><input id="operationsSelectAll" type="checkbox" aria-label="Выбрать все операции" /></th>
+                    <th>Дата</th>
+                    <th>Площадка</th>
+                    <th>Статья</th>
+                    <th>SKU</th>
+                    <th>Сумма</th>
+                    <th>Тип</th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="operationsTable"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+
+        <div class="page" data-page="reports">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">Отчеты</p>
+              <h2>Сводка по дням и площадкам</h2>
+            </div>
+            <button class="primary-button" id="exportReports" type="button">CSV по дням</button>
+          </section>
+
+          <section class="filters compact-filters" aria-label="Фильтры отчетов">
+            <label>
+              Площадка
+              <select id="reportMarketFilter">
+                <option value="all">Все</option>
+                <option value="WB">Wildberries</option>
+                <option value="Ozon">Ozon</option>
+              </select>
+            </label>
+            <label>
+              Период
+              <select id="reportPeriodFilter">
+                <option value="all">Все даты</option>
+                <option value="7">7 дней</option>
+                <option value="14">14 дней</option>
+                <option value="30">30 дней</option>
+              </select>
+            </label>
+          </section>
+
+          <section class="report-grid">
+            <article class="metric-card">
+              <span>Дней в отчете</span>
+              <strong id="reportDaysMetric">0</strong>
+              <small>По журналу операций</small>
+            </article>
+            <article class="metric-card">
+              <span>Лучшая дата</span>
+              <strong id="reportBestDayMetric">—</strong>
+              <small id="reportBestDayNote">Нет данных</small>
+            </article>
+            <article class="metric-card">
+              <span>Худшая дата</span>
+              <strong id="reportWorstDayMetric">—</strong>
+              <small id="reportWorstDayNote">Нет данных</small>
+            </article>
+          </section>
+
+          <section class="content-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Дневной отчет</h2>
+                  <p>Приход, расход и итог по каждой дате</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Дата</th>
+                      <th>Приход</th>
+                      <th>Расход</th>
+                      <th>Итог</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dailyReportTable"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Итоги по площадкам</h2>
+                  <p>Текущий баланс WB и Ozon</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Площадка</th>
+                      <th>Приход</th>
+                      <th>Расход</th>
+                      <th>Итог</th>
+                    </tr>
+                  </thead>
+                  <tbody id="marketReportTable"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </div>
+
+        <div class="page" data-page="wb">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">Wildberries</p>
+              <h2>Продажи, комиссии и логистика WB</h2>
+            </div>
+          </section>
+          <section class="market-grid" id="wbCards"></section>
+        </div>
+
+        <div class="page" data-page="ozon">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">Ozon</p>
+              <h2>Продажи, расходы и маржа Ozon</h2>
+            </div>
+          </section>
+          <section class="market-grid" id="ozonCards"></section>
+        </div>
+
+        <div class="page" data-page="ads">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">Реклама</p>
+              <h2>Кампании, ДРР и окупаемость</h2>
+            </div>
+            <button class="ghost-button" id="reconcileAds" type="button">Сверить расходы</button>
+          </section>
+          <article class="panel">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Кампания</th>
+                    <th>Площадка</th>
+                    <th>Расход</th>
+                    <th>Продажи</th>
+                    <th>ДРР</th>
+                    <th>Статус</th>
+                  </tr>
+                </thead>
+                <tbody id="adsTable"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+
+        <div class="page" data-page="stock">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">Остатки</p>
+              <h2>Склад, скорость продаж и риск out of stock</h2>
+            </div>
+            <button class="primary-button" data-modal-open="supplyModal" type="button">Заказ поставки</button>
+          </section>
+          <section class="stock-grid" id="stockCards"></section>
+        </div>
+
+        <div class="page" data-page="products">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">SKU</p>
+              <h2>Карточки товаров и юнит-экономика</h2>
+            </div>
+            <button class="primary-button" data-modal-open="costModal" type="button">Импорт себестоимости</button>
+          </section>
+          <section class="report-grid">
+            <article class="metric-card">
+              <span>SKU с прибылью</span>
+              <strong id="profitableSkuMetric">0</strong>
+              <small class="good">Маржа выше нуля</small>
+            </article>
+            <article class="metric-card">
+              <span>SKU в минусе</span>
+              <strong id="lossSkuMetric">0</strong>
+              <small class="warn">Нужно разобрать расходы</small>
+            </article>
+            <article class="metric-card">
+              <span>Средняя маржа</span>
+              <strong id="avgSkuMarginMetric">0%</strong>
+              <small>По операциям</small>
+            </article>
+          </section>
+          <article class="panel">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Товар</th>
+                    <th>Площадка</th>
+                    <th>Выручка</th>
+                    <th>Прибыль</th>
+                    <th>Расходы</th>
+                    <th>Маржа</th>
+                    <th>Статус</th>
+                  </tr>
+                </thead>
+                <tbody id="productFullTable"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+
+        <div class="page" data-page="settings">
+          <section class="page-title">
+            <div>
+              <p class="eyebrow">Настройки</p>
+              <h2>Подключения, импорт и правила расчета</h2>
+            </div>
+            <button class="primary-button" id="saveSettings" type="button">Сохранить</button>
+          </section>
+
+          <section class="settings-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Интеграции</h2>
+                  <p>Токены пока хранятся локально в браузере для прототипа</p>
+                </div>
+              </div>
+              <form class="connector-list" id="settingsForm">
+                <label class="connector-row">
+                  <span>
+                    <strong>Wildberries API</strong>
+                    <small>Продажи, отчеты, остатки</small>
+                  </span>
+                  <input id="wbToken" type="password" placeholder="Token WB" autocomplete="off" />
+                </label>
+                <label class="connector-row">
+                  <span>
+                    <strong>Ozon Seller API</strong>
+                    <small>Client-Id и API-Key</small>
+                  </span>
+                  <input id="ozonToken" type="password" placeholder="Client-Id:Api-Key" autocomplete="off" />
+                </label>
+                <label class="connector-row">
+                  <span>
+                    <strong>1C / МойСклад</strong>
+                    <small>Себестоимость и закупки</small>
+                  </span>
+                  <input id="erpToken" type="password" placeholder="Webhook URL" autocomplete="off" />
+                </label>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Правила учета</h2>
+                  <p>Настройки, которые влияют на ОПиУ и SKU</p>
+                </div>
+              </div>
+              <div class="rule-list">
+                <label class="switch-row">
+                  <span>Учитывать возвраты в периоде продажи</span>
+                  <input id="returnsRule" type="checkbox" checked />
+                </label>
+                <label class="switch-row">
+                  <span>Разносить рекламу по SKU пропорционально продажам</span>
+                  <input id="adsRule" type="checkbox" checked />
+                </label>
+                <label class="switch-row">
+                  <span>Показывать предупреждения по остаткам</span>
+                  <input id="stockRule" type="checkbox" checked />
+                </label>
+              </div>
+              <div class="settings-summary" id="settingsSummary"></div>
+            </article>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+    <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+      <section class="modal" id="expenseModal" role="dialog" aria-modal="true" aria-labelledby="expenseModalTitle">
+        <div class="modal-head">
+          <h2 id="expenseModalTitle">Добавить расход</h2>
+          <button class="icon-button" data-modal-close type="button" aria-label="Закрыть">×</button>
+        </div>
+        <form class="modal-form" id="expenseForm">
+          <input name="id" type="hidden" />
+          <label>Статья<input name="name" required placeholder="Например, упаковка" /></label>
+          <label>Сумма<input name="amount" type="number" min="1" required placeholder="45000" /></label>
+          <label>Доля, %<input name="value" type="number" min="1" max="100" required placeholder="4" /></label>
+          <button class="primary-button" id="expenseSubmit" type="submit">Добавить</button>
+        </form>
+      </section>
+
+      <section class="modal" id="costModal" role="dialog" aria-modal="true" aria-labelledby="costModalTitle">
+        <div class="modal-head">
+          <h2 id="costModalTitle">Импорт себестоимости</h2>
+          <button class="icon-button" data-modal-close type="button" aria-label="Закрыть">×</button>
+        </div>
+        <form class="modal-form" id="costForm">
+          <label>Формат CSV<textarea name="csv" rows="6" placeholder="Товар;Себестоимость&#10;Органайзер Loft Box;380"></textarea></label>
+          <button class="primary-button" type="submit">Импортировать</button>
+        </form>
+      </section>
+
+      <section class="modal" id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+        <div class="modal-head">
+          <h2 id="paymentModalTitle">Платежный календарь</h2>
+          <button class="icon-button" data-modal-close type="button" aria-label="Закрыть">×</button>
+        </div>
+        <div class="timeline" id="paymentModalTimeline"></div>
+      </section>
+
+      <section class="modal" id="supplyModal" role="dialog" aria-modal="true" aria-labelledby="supplyModalTitle">
+        <div class="modal-head">
+          <h2 id="supplyModalTitle">Заказ поставки</h2>
+          <button class="icon-button" data-modal-close type="button" aria-label="Закрыть">×</button>
+        </div>
+        <div class="stock-grid compact-grid" id="supplyModalCards"></div>
+      </section>
+
+      <section class="modal" id="operationImportModal" role="dialog" aria-modal="true" aria-labelledby="operationImportModalTitle">
+        <div class="modal-head">
+          <h2 id="operationImportModalTitle">Импорт операций</h2>
+          <button class="icon-button" data-modal-close type="button" aria-label="Закрыть">×</button>
+        </div>
+        <form class="modal-form" id="operationImportForm">
+          <label>CSV операции<textarea name="csv" rows="8" placeholder="Дата;Площадка;Статья;SKU;Сумма;Тип&#10;2026-05-04;WB;Продажа;Органайзер Loft Box;124000;income&#10;2026-05-04;WB;Логистика;Органайзер Loft Box;-18000;expense"></textarea></label>
+          <button class="primary-button" type="submit">Импортировать</button>
+        </form>
+      </section>
+
+      <section class="modal" id="operationAddModal" role="dialog" aria-modal="true" aria-labelledby="operationAddModalTitle">
+        <div class="modal-head">
+          <h2 id="operationAddModalTitle">Добавить операцию</h2>
+          <button class="icon-button" data-modal-close type="button" aria-label="Закрыть">×</button>
+        </div>
+        <form class="modal-form" id="operationAddForm">
+          <input name="id" type="hidden" />
+          <label>Дата<input name="date" type="date" required /></label>
+          <label>Площадка
+            <select name="market" required>
+              <option value="WB">Wildberries</option>
+              <option value="Ozon">Ozon</option>
+            </select>
+          </label>
+          <label>Статья<input name="category" required placeholder="Например, Продажа" /></label>
+          <label>SKU<input name="sku" required placeholder="Название товара" /></label>
+          <label>Сумма<input name="amount" type="number" required placeholder="150000 или -10000" /></label>
+          <label>Тип
+            <select name="type" required>
+              <option value="income">Приход</option>
+              <option value="expense">Расход</option>
+            </select>
+          </label>
+          <button class="primary-button" id="operationAddSubmit" type="submit">Добавить</button>
+        </form>
+      </section>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
