@@ -32,6 +32,8 @@ export function ImportForm({ stores }: ImportFormProps) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
   const [error, setError] = useState("")
+  const [diag, setDiag] = useState<{ matched: Record<string,string>; unmatched: string[]; sampleValues: Record<string,unknown> } | null>(null)
+  const [debugData, setDebugData] = useState<Record<string, unknown> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = (f: File) => {
@@ -58,6 +60,24 @@ export function ImportForm({ stores }: ImportFormProps) {
 
   const onDragLeave = useCallback(() => setDragging(false), [])
 
+  async function onDebug() {
+    if (!file) return
+    const formData = new FormData()
+    formData.append("file", file)
+    const res = await fetch("/api/import/debug", { method: "POST", body: formData })
+    const data = await res.json()
+    setDebugData(data)
+  }
+
+  async function onPreview() {
+    if (!file) return
+    const formData = new FormData()
+    formData.append("file", file)
+    const res = await fetch("/api/import/preview", { method: "POST", body: formData })
+    const data = await res.json()
+    setDiag({ matched: data.matched ?? {}, unmatched: data.unmatched ?? [], sampleValues: data.sampleValues ?? {} })
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!file || !storeId) return
@@ -76,6 +96,7 @@ export function ImportForm({ stores }: ImportFormProps) {
       setError(data.error || "Ошибка загрузки")
     } else {
       setResult(data)
+      setDiag(null)
       setFile(null)
       router.refresh()
     }
@@ -193,9 +214,74 @@ export function ImportForm({ stores }: ImportFormProps) {
         </Card>
       )}
 
-      <Button type="submit" disabled={!file || loading} className="w-full">
-        {loading ? "Обрабатываю..." : "Загрузить отчёт"}
-      </Button>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={!file || loading} className="flex-1">
+          {loading ? "Обрабатываю..." : "Загрузить отчёт"}
+        </Button>
+        {file && (
+          <Button type="button" variant="outline" onClick={onPreview}>
+            Колонки
+          </Button>
+        )}
+        {file && (
+          <Button type="button" variant="outline" onClick={onDebug}>
+            Debug
+          </Button>
+        )}
+      </div>
+
+      {debugData && (
+        <div className="rounded-md border bg-muted/50 p-3 text-xs space-y-2">
+          <p className="font-medium">Типы операций в файле:</p>
+          <table className="w-full">
+            <thead>
+              <tr className="text-left text-muted-foreground">
+                <th className="pb-1">Тип</th>
+                <th className="pb-1 text-right">Кол-во строк</th>
+                <th className="pb-1 text-right">Выручка</th>
+                <th className="pb-1 text-right">Логистика</th>
+                <th className="pb-1 text-right">Хранение</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(debugData.operationTypes as Record<string, {count:number;revenue:number;logistics:number;storage:number}>)
+                .sort((a,b) => b[1].count - a[1].count)
+                .map(([op, v]) => (
+                <tr key={op} className="border-t">
+                  <td className="py-0.5 pr-2 font-medium">{op}</td>
+                  <td className="py-0.5 text-right">{v.count}</td>
+                  <td className="py-0.5 text-right">{Math.round(v.revenue)}</td>
+                  <td className="py-0.5 text-right">{Math.round(v.logistics)}</td>
+                  <td className="py-0.5 text-right">{Math.round(v.storage)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {diag && (
+        <div className="rounded-md border bg-muted/50 p-3 text-xs space-y-2">
+          <p className="font-medium">Найдено полей: {Object.keys(diag.matched).length}</p>
+          <div className="space-y-1">
+            {Object.entries(diag.matched).map(([field, col]) => (
+              <div key={field} className="flex items-center gap-2">
+                <span className="text-emerald-600">✓</span>
+                <span className="font-medium w-32 shrink-0">{field}</span>
+                <span className="text-muted-foreground truncate">{col}</span>
+                <span className="ml-auto shrink-0 font-mono">{String(diag.sampleValues[field] ?? "—")}</span>
+              </div>
+            ))}
+            {diag.unmatched.map((field) => (
+              <div key={field} className="flex items-center gap-2 text-muted-foreground">
+                <span className="text-red-400">✗</span>
+                <span className="font-medium w-32 shrink-0">{field}</span>
+                <span>не найдено</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </form>
   )
 }

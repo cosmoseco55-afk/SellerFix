@@ -6,98 +6,79 @@ export interface WbRow {
   productName: string
   category: string
   subject: string
-  operationType: string // "Продажа", "Возврат", "Логистика", etc.
+  operationType: string
   quantity: number
   retailPrice: number
   salePrice: number
-  revenue: number          // к перечислению продавцу
-  commission: number       // вознаграждение WB
-  logistics: number        // доставка
-  storage: number          // хранение
-  penalties: number        // штрафы
-  compensations: number    // компенсации
-  otherDeductions: number  // прочие удержания
+  revenue: number
+  commission: number
+  logistics: number
+  storage: number
+  penalties: number
+  compensations: number
+  otherDeductions: number
   wbArticle: string
 }
 
-const COL_ALIASES: Record<string, string> = {
-  // Дата
-  "дата принятия для оплаты": "date",
-  "дата": "date",
-  // Артикул поставщика
-  "артикул поставщика": "vendorArticle",
-  "ваш артикул": "vendorArticle",
-  // Наименование
-  "название товара": "productName",
-  "наименование товара": "productName",
-  "предмет": "subject",
-  // Категория
-  "категория": "category",
-  // Тип операции
-  "обоснование для оплаты": "operationType",
-  "тип документа": "operationType",
-  // Количество
-  "кол-во": "quantity",
-  "количество": "quantity",
-  // Цена
-  "цена розничная, руб.": "retailPrice",
-  "розничная цена без скидки, руб.": "retailPrice",
-  // Цена продажи
-  "цена со скидкой, руб.": "salePrice",
-  "розничная цена, руб.": "salePrice",
-  // Выручка / к перечислению
-  "итого к перечислению продавцу, руб.": "revenue",
-  "к перечислению продавцу, руб.": "revenue",
-  "вознаграждение продавца за реализованный товар (руб.)": "revenue",
-  // Комиссия WB
-  "вознаграждение с продаж до вычета услуг, руб.": "commission",
-  "комиссия": "commission",
-  // Логистика
-  "услуги по доставке товара покупателю, руб.": "logistics",
-  "доставка, руб.": "logistics",
-  // Хранение
-  "хранение, руб.": "storage",
-  "хранение": "storage",
-  // Штрафы
-  "общая сумма штрафов, руб.": "penalties",
-  "штрафы": "penalties",
-  // Компенсации
-  "возмещение издержек по перевозке, руб.": "compensations",
-  "компенсация": "compensations",
-  // Прочие удержания
-  "прочие удержания/выплаты": "otherDeductions",
-  "прочие": "otherDeductions",
-  // Артикул WB
-  "код номенклатуры": "wbArticle",
-  "артикул wb": "wbArticle",
-  "nm id": "wbArticle",
-  "nmid": "wbArticle",
+// Keyword matchers — ищем колонку по подстроке (lowercase)
+const FIELD_KEYWORDS: Array<{ field: string; keywords: string[] }> = [
+  { field: "date",              keywords: ["дата продажи", "дата принятия для оплаты", "дата принятия"] },
+  { field: "vendorArticle",     keywords: ["артикул поставщика", "ваш артикул"] },
+  { field: "wbArticle",         keywords: ["код номенклатуры", "артикул wb", "nm id", "nmid"] },
+  { field: "productName",       keywords: ["наименование товара", "название товара", "название"] },
+  { field: "subject",           keywords: ["предмет"] },
+  { field: "category",          keywords: ["категория"] },
+  // Основной источник типа — "Обоснование для оплаты" (содержит "Продажа", "Возврат", "Логистика")
+  { field: "operationType",     keywords: ["обоснование для оплаты"] },
+  // Запасной тип — "Тип документа"
+  { field: "operationType2",    keywords: ["тип документа"] },
+  { field: "quantity",          keywords: ["кол-во", "количество"] },
+  { field: "retailPrice",    keywords: ["цена розничная с учетом", "розничная цена без скидки", "цена розничная"] },
+  { field: "salePrice",      keywords: ["вайлдберриз реализовал", "цена со скидкой"] },
+  { field: "revenue",        keywords: ["к перечислению продавцу", "вознаграждение продавца за реализованный"] },
+  { field: "commission",     keywords: ["вознаграждение с продаж до вычета", "вознаграждение вайлдберриз (вв), без ндс", "комиссия"] },
+  { field: "logistics",      keywords: ["услуги по доставке товара покупателю", "услуги по доставке"] },
+  { field: "storage",        keywords: ["хранение"] },
+  { field: "penalties",      keywords: ["общая сумма штрафов", "штрафов"] },
+  { field: "compensations",  keywords: ["возмещение издержек по перевозке", "возмещение за выдачу", "компенсац"] },
+  // WB новый формат: "Удержания" вместо "Прочие удержания"
+  { field: "otherDeductions",keywords: ["удержания", "прочие удержания"] },
+]
+
+function buildKeyMap(headers: string[]): Map<string, string> {
+  const map = new Map<string, string>()
+  // Итерируем по FIELD_KEYWORDS (не по заголовкам) — чтобы первый keyword имел приоритет
+  for (const { field, keywords } of FIELD_KEYWORDS) {
+    for (const kw of keywords) {
+      const match = headers.find((h) => h.toLowerCase().trim().includes(kw))
+      if (match) {
+        map.set(field, match)
+        break
+      }
+    }
+  }
+  return map
 }
 
-function normalizeKey(s: string): string {
-  return s.toLowerCase().trim().replace(/\s+/g, " ")
-}
-
-function parseDate(val: unknown): Date {
-  if (val instanceof Date) return val
-  if (typeof val === "number") {
-    // Excel serial date
+function parseDate(val: unknown): Date | null {
+  if (val instanceof Date && !isNaN(val.getTime())) return val
+  if (typeof val === "number" && val > 0) {
     return new Date(Math.round((val - 25569) * 86400 * 1000))
   }
-  if (typeof val === "string") {
+  if (typeof val === "string" && val.trim()) {
+    // DD.MM.YYYY
+    const m1 = val.match(/(\d{2})\.(\d{2})\.(\d{4})/)
+    if (m1) return new Date(`${m1[3]}-${m1[2]}-${m1[1]}`)
     const d = new Date(val)
     if (!isNaN(d.getTime())) return d
-    // DD.MM.YYYY
-    const m = val.match(/(\d{2})\.(\d{2})\.(\d{4})/)
-    if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}`)
   }
-  return new Date()
+  return null
 }
 
 function num(val: unknown): number {
   if (typeof val === "number") return val
   if (typeof val === "string") {
-    const n = parseFloat(val.replace(",", ".").replace(/\s/g, ""))
+    const n = parseFloat(val.replace(",", ".").replace(/\s/g, "").replace(/ /g, ""))
     return isNaN(n) ? 0 : n
   }
   return 0
@@ -106,47 +87,63 @@ function num(val: unknown): number {
 export function parseWbReport(buffer: Buffer): WbRow[] {
   const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true })
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
-  const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" })
 
-  if (raw.length === 0) return []
+  // WB иногда добавляет несколько строк заголовка — ищем строку с "Обоснование для оплаты"
+  const rawAll = (XLSX.utils.sheet_to_json(sheet, {
+    defval: "",
+    header: 1,
+  }) as unknown) as unknown[][]
 
-  // Map column headers to our field names
-  const firstRow = raw[0]
-  const keyMap: Record<string, string> = {}
-  for (const colName of Object.keys(firstRow)) {
-    const alias = COL_ALIASES[normalizeKey(colName)]
-    if (alias) keyMap[colName] = alias
+  // Найти строку-заголовок
+  let headerRowIdx = 0
+  for (let i = 0; i < Math.min(10, rawAll.length); i++) {
+    const row = rawAll[i] as unknown[]
+    const joined = row.map((c) => String(c ?? "").toLowerCase()).join("|")
+    if (joined.includes("обоснование для оплаты") || joined.includes("артикул поставщика")) {
+      headerRowIdx = i
+      break
+    }
   }
 
+  const headers = (rawAll[headerRowIdx] as unknown[]).map((c) => String(c ?? ""))
+  const keyMap = buildKeyMap(headers)
+
   const rows: WbRow[] = []
-  for (const row of raw) {
-    // Skip summary/empty rows
-    const opType = String(row[Object.keys(keyMap).find((k) => keyMap[k] === "operationType") ?? ""] ?? "")
-    if (!opType) continue
+  for (let i = headerRowIdx + 1; i < rawAll.length; i++) {
+    const rawRow = rawAll[i] as unknown[]
+    const row: Record<string, unknown> = {}
+    headers.forEach((h, idx) => { row[h] = rawRow[idx] })
 
     const get = (field: string): unknown => {
-      const col = Object.keys(keyMap).find((k) => keyMap[k] === field)
+      const col = keyMap.get(field)
       return col ? row[col] : undefined
     }
 
+    // Используем "Обоснование для оплаты" как основной источник, "Тип документа" как запасной
+    const opType = (String(get("operationType") ?? "").trim() || String(get("operationType2") ?? "").trim())
+    if (!opType) continue
+
+    const date = parseDate(get("date"))
+    if (!date) continue
+
     rows.push({
-      date: parseDate(get("date")),
-      vendorArticle: String(get("vendorArticle") ?? ""),
-      productName: String(get("productName") ?? ""),
-      category: String(get("category") ?? ""),
-      subject: String(get("subject") ?? ""),
+      date,
+      vendorArticle: String(get("vendorArticle") ?? "").trim(),
+      productName:   String(get("productName") ?? "").trim(),
+      category:      String(get("category") ?? "").trim(),
+      subject:       String(get("subject") ?? "").trim(),
       operationType: opType,
-      quantity: Math.abs(num(get("quantity"))),
-      retailPrice: num(get("retailPrice")),
-      salePrice: num(get("salePrice")),
-      revenue: num(get("revenue")),
-      commission: Math.abs(num(get("commission"))),
-      logistics: Math.abs(num(get("logistics"))),
-      storage: Math.abs(num(get("storage"))),
-      penalties: Math.abs(num(get("penalties"))),
+      quantity:      Math.abs(num(get("quantity"))),
+      retailPrice:   num(get("retailPrice")),
+      salePrice:     num(get("salePrice")),
+      revenue:       num(get("revenue")),
+      commission:    Math.abs(num(get("commission"))),
+      logistics:     Math.abs(num(get("logistics"))),
+      storage:       Math.abs(num(get("storage"))),
+      penalties:     Math.abs(num(get("penalties"))),
       compensations: Math.abs(num(get("compensations"))),
       otherDeductions: Math.abs(num(get("otherDeductions"))),
-      wbArticle: String(get("wbArticle") ?? ""),
+      wbArticle:     String(get("wbArticle") ?? "").trim(),
     })
   }
 

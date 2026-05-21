@@ -68,6 +68,8 @@ model Store {
   products    Product[]
   orders      Order[]
   syncLogs    SyncLog[]
+  adSpends    AdSpend[]
+  orderStats  OrderStat[]
 
   @@index([userId])
 }
@@ -95,6 +97,8 @@ model Product {
   store          Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
   orders         Order[]
   stockSnapshots StockSnapshot[]
+  adSpends       AdSpend[]
+  orderStats     OrderStat[]
 
   @@unique([storeId, externalId])
   @@index([storeId])
@@ -132,9 +136,54 @@ model StockSnapshot {
   date      DateTime @default(now())
   quantity  Int      @default(0)
   location  String   @default("MP")
+  size      String   @default("")
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, date])
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+model AdSpend {
+  id           String         @id @default(cuid())
+  storeId      String
+  productId    String?
+  date         DateTime
+  campaignId   String         @default("")
+  campaignName String         @default("")
+  campaignType String         @default("")
+  status       CampaignStatus @default(ACTIVE)
+  endDate      DateTime?
+  impressions  Int      @default(0)
+  clicks       Int      @default(0)
+  spend        Float    @default(0)
+  ordersCount  Int      @default(0)
+  revenue      Float    @default(0)
+  createdAt    DateTime @default(now())
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product      Product? @relation(fields: [productId], references: [id])
+
+  @@index([storeId, date])
+  @@index([productId])
+}
+
+model OrderStat {
+  id        String   @id @default(cuid())
+  storeId   String
+  productId String?
+  date      DateTime
+  ordered   Int      @default(0)  // заказано (все статусы)
+  bought    Int      @default(0)  // выкуплено
+  cancelled Int      @default(0)  // отменено / не выкуплено
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id])
+
+  @@index([storeId, date])
+  @@index([productId])
 }
 
 model SyncLog {

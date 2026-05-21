@@ -13,6 +13,8 @@ import {
   Settings,
   Store,
   Upload,
+  ScanLine,
+  Calculator,
 } from "lucide-react"
 
 const nav = [
@@ -20,6 +22,7 @@ const nav = [
     title: "Финансы",
     items: [
       { href: "/dashboard", label: "Дашборд", icon: LayoutDashboard },
+      { href: "/dashboard/otsifrovka", label: "Оцифровка", icon: ScanLine },
       { href: "/dashboard/pnl", label: "ОПиУ", icon: TrendingUp },
       { href: "/dashboard/cashflow", label: "ДДС", icon: BarChart3 },
     ],
@@ -28,6 +31,7 @@ const nav = [
     title: "Маркетплейсы",
     items: [
       { href: "/dashboard/products", label: "Товары", icon: Package },
+      { href: "/dashboard/unit", label: "Юнит-экономика", icon: Calculator },
       { href: "/dashboard/advertising", label: "Реклама", icon: Megaphone },
       { href: "/dashboard/stock", label: "Склад", icon: Warehouse },
     ],
