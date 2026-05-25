@@ -2,11 +2,11 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { MetricCard } from "@/components/dashboard/metric-card"
 import { RevenueChart } from "@/components/dashboard/revenue-chart"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { formatCurrency, formatPercent, calcMargin, calcROI } from "@/lib/utils"
 import { Suspense } from "react"
+import { Store, ArrowRight } from "lucide-react"
+import Link from "next/link"
 
 function parseDateParam(val: string | undefined, fallback: Date): Date {
   if (!val) return fallback
@@ -48,7 +48,6 @@ async function getDashboardData(userId: string, fromDate: Date, toDate: Date) {
       penalties    += o.penalties
       returns      += o.returns
       quantity     += o.quantity
-      // COGS только на строках реальных продаж (revenue > 0)
       if (o.revenue > 0) cogs += unitCogs * o.quantity
     }
     const costs       = commission + logistics + storage + cogs
@@ -75,17 +74,15 @@ async function getDashboardData(userId: string, fromDate: Date, toDate: Date) {
 
   const productStats = products.map((p) => {
     const s = sum(p.orders)
-    return { id: p.id, name: p.name, marketplace: p.store.marketplace, revenue: s.revenue, profit: s.grossProfit, margin: calcMargin(s.revenue, s.costs), quantity: s.quantity }
+    return { id: p.id, name: p.name, marketplace: p.store.marketplace, revenue: s.revenue, profit: s.grossProfit, costs: s.costs, margin: calcMargin(s.revenue, s.costs), quantity: s.quantity }
   }).filter((p) => p.revenue > 0).sort((a, b) => b.profit - a.profit)
 
-  // AdSpend по дням для графика
   const adByDay = new Map<string, number>()
   for (const ad of adSpends) {
     const key = new Date(ad.date).toDateString()
     adByDay.set(key, (adByDay.get(key) ?? 0) + ad.spend)
   }
 
-  // График по дням
   const chart: { date: string; revenue: number; profit: number }[] = []
   const msPerDay = 24 * 60 * 60 * 1000
   const days = Math.min(Math.round((toDate.getTime() - fromDate.getTime()) / msPerDay) + 1, 90)
@@ -129,62 +126,118 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   if (storesCount === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-        <h2 className="text-xl font-semibold">Добро пожаловать в SellerFix</h2>
-        <p className="text-muted-foreground">Подключите магазин, чтобы видеть аналитику</p>
-        <a href="/dashboard/stores" className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90">
+      <div className="flex h-full flex-col items-center justify-center gap-5 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
+          <Store className="w-7 h-7 text-indigo-500" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-slate-800">Добро пожаловать в SellerFix</h2>
+          <p className="mt-1.5 text-sm text-slate-500">Подключите магазин, чтобы видеть аналитику</p>
+        </div>
+        <a
+          href="/dashboard/stores"
+          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+        >
           Подключить магазин
+          <ArrowRight className="w-4 h-4" />
         </a>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Page header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-lg font-semibold">Дашборд</h1>
-        <Suspense><DateRangePicker defaultFrom={fromParam} defaultTo={toParam} /></Suspense>
+        <div>
+          <h1 className="text-base font-semibold text-slate-800">Дашборд</h1>
+          <p className="text-xs text-slate-400 mt-0.5">Сводная аналитика по всем магазинам</p>
+        </div>
+        <Suspense>
+          <DateRangePicker defaultFrom={fromParam} defaultTo={toParam} />
+        </Suspense>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <MetricCard title="Чистая прибыль" value={formatCurrency(cur.profit, true)} sub={`Маржа ${formatPercent(margin)}`} diff={diffProfit} />
-        <MetricCard title="Выручка" value={formatCurrency(cur.revenue, true)} sub={`${cur.quantity} шт`} diff={diffRevenue} />
-        <MetricCard title="ROI" value={formatPercent(roi)} sub="Рентабельность" />
-        <MetricCard title="ДРР" value={formatPercent(drr)} sub={formatCurrency(cur.advertising, true) + " реклама"} />
+      {/* Metrics */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MetricCard
+          title="Чистая прибыль"
+          value={formatCurrency(cur.profit, true)}
+          sub={`Маржа ${formatPercent(margin)}`}
+          diff={diffProfit}
+        />
+        <MetricCard
+          title="Выручка"
+          value={formatCurrency(cur.revenue, true)}
+          sub={`${cur.quantity} шт продано`}
+          diff={diffRevenue}
+        />
+        <MetricCard
+          title="ROI"
+          value={formatPercent(roi)}
+          sub="Рентабельность вложений"
+        />
+        <MetricCard
+          title="ДРР"
+          value={formatPercent(drr)}
+          sub={`${formatCurrency(cur.advertising, true)} на рекламу`}
+        />
       </div>
 
+      {/* Chart + Top products */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Выручка и прибыль</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RevenueChart data={chart} />
-          </CardContent>
-        </Card>
+        {/* Chart */}
+        <div className="lg:col-span-2 rounded-xl bg-white border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-800">Выручка и прибыль</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Динамика за выбранный период</p>
+            </div>
+          </div>
+          <RevenueChart data={chart} />
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Топ товары</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {productStats.length === 0 && (
-              <p className="text-xs text-muted-foreground">Нет данных за период</p>
-            )}
-            {productStats.slice(0, 5).map((p) => (
-              <div key={p.id} className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-medium">{p.name}</p>
-                  <div className="flex items-center gap-1">
-                    <Badge variant="outline" className="h-4 px-1 text-[10px]">{p.marketplace}</Badge>
-                    <span className="text-[10px] text-muted-foreground">{formatPercent(p.margin)} маржа</span>
+        {/* Top products */}
+        <div className="rounded-xl bg-white border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-800">Топ товары</h2>
+              <p className="text-xs text-slate-400 mt-0.5">По прибыли за период</p>
+            </div>
+            <Link href="/dashboard/products" className="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
+              Все <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          {productStats.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <p className="text-sm text-slate-400">Нет данных за период</p>
+              <p className="text-xs text-slate-300 mt-1">Загрузите финансовые отчёты</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {productStats.slice(0, 6).map((p, i) => (
+                <div key={p.id} className="flex items-center gap-3">
+                  <span className="w-5 h-5 rounded-full bg-slate-100 text-[10px] font-bold text-slate-400 flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-slate-700">{p.name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">
+                        {p.marketplace}
+                      </span>
+                      <span className="text-[10px] text-slate-400">{formatPercent(p.margin)} маржа</span>
+                    </div>
                   </div>
+                  <span className="shrink-0 text-xs font-bold text-emerald-600">
+                    {formatCurrency(p.profit, true)}
+                  </span>
                 </div>
-                <span className="shrink-0 text-xs font-semibold text-emerald-600">{formatCurrency(p.profit, true)}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
