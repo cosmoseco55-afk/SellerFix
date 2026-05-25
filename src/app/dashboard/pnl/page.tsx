@@ -179,25 +179,25 @@ export default async function PnlPage({ searchParams }: PageProps) {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Card><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Выручка</p>
-          <p className="text-xl font-bold mt-1">{formatCurrency(totals.revenue, true)}</p>
+          <p className="text-[22px] font-bold mt-1">{formatCurrency(totals.revenue, true)}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">{totals.quantity} шт</p>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Валовая прибыль</p>
-          <p className={`text-xl font-bold mt-1 ${totals.grossProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+          <p className={`text-[22px] font-bold mt-1 ${totals.grossProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>
             {formatCurrency(totals.grossProfit, true)}
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">без рекламы и возвратов</p>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Чистая прибыль</p>
-          <p className={`text-xl font-bold mt-1 ${totals.netProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+          <p className={`text-[22px] font-bold mt-1 ${totals.netProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>
             {formatCurrency(totals.netProfit, true)}
           </p>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Маржа</p>
-          <p className={`text-xl font-bold mt-1 ${totals.margin >= 15 ? "text-emerald-600" : totals.margin >= 0 ? "text-amber-600" : "text-red-500"}`}>
+          <p className={`text-[22px] font-bold mt-1 ${totals.margin >= 15 ? "text-emerald-600" : totals.margin >= 0 ? "text-amber-600" : "text-red-500"}`}>
             {formatPercent(totals.margin)}
           </p>
         </CardContent></Card>

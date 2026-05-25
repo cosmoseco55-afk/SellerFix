@@ -123,10 +123,10 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-size: 15px;
+    font-size: 14px;
   }
   html {
     @apply font-sans;
-    font-size: 15px;
+    font-size: 14px;
   }
 }

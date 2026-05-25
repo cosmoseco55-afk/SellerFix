@@ -237,7 +237,7 @@ function Widget({ label, value, secondary, prevValue, prevSecondary, color = "wh
     <div className={`rounded-xl p-4 flex flex-col gap-2 ${bg}`}>
       <p className="text-xs text-muted-foreground font-medium leading-tight">{label}</p>
       <div className="flex items-baseline gap-1.5 flex-wrap">
-        <span className="text-xl font-bold leading-none">{fmt(value)}</span>
+        <span className="text-[22px] font-bold leading-none">{fmt(value)}</span>
         {secondary && <span className="text-sm text-muted-foreground font-medium">/ {secondary}</span>}
       </div>
       {hasDelta && (

@@ -16,7 +16,7 @@ export function MetricCard({ title, value, sub, diff, diffLabel, className }: Me
   return (
     <div className={cn("rounded-xl bg-white border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow", className)}>
       <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{title}</p>
-      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
+      <p className="mt-2 text-[26px] font-bold tracking-tight text-slate-900 leading-none">{value}</p>
       {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
       {diff !== undefined && (
         <div

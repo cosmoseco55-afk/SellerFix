@@ -169,7 +169,7 @@ export default async function CashflowPage({ searchParams }: PageProps) {
             <ArrowDownLeft className="h-4 w-4 text-emerald-500" />
             <p className="text-xs text-muted-foreground">Поступления</p>
           </div>
-          <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totals.totalIn, true)}</p>
+          <p className="text-[22px] font-bold text-emerald-600">{formatCurrency(totals.totalIn, true)}</p>
           <div className="mt-2 space-y-1 text-xs text-muted-foreground">
             <div className="flex justify-between"><span>Выручка</span><span>{formatCurrency(totals.inRevenue, true)}</span></div>
             <div className="flex justify-between"><span>Компенсации</span><span>{formatCurrency(totals.inCompensations, true)}</span></div>
@@ -181,7 +181,7 @@ export default async function CashflowPage({ searchParams }: PageProps) {
             <ArrowUpRight className="h-4 w-4 text-red-500" />
             <p className="text-xs text-muted-foreground">Выбытия</p>
           </div>
-          <p className="text-2xl font-bold text-red-500">{formatCurrency(totals.totalOut, true)}</p>
+          <p className="text-[22px] font-bold text-red-500">{formatCurrency(totals.totalOut, true)}</p>
           <div className="mt-2 space-y-1 text-xs text-muted-foreground">
             <div className="flex justify-between"><span>Себестоимость</span><span>{formatCurrency(totals.outCogs, true)}</span></div>
             <div className="flex justify-between"><span>Комиссия</span><span>{formatCurrency(totals.outCommission, true)}</span></div>
@@ -198,7 +198,7 @@ export default async function CashflowPage({ searchParams }: PageProps) {
             <Wallet className="h-4 w-4 text-primary" />
             <p className="text-xs text-muted-foreground">Чистый денежный поток</p>
           </div>
-          <p className={`text-2xl font-bold ${totals.net >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+          <p className={`text-[22px] font-bold ${totals.net >= 0 ? "text-emerald-600" : "text-red-500"}`}>
             {totals.net >= 0 ? "+" : ""}{formatCurrency(totals.net, true)}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
